@@ -1,7 +1,6 @@
 from fastapi import FastAPI, File, UploadFile, Form
 from fastapi.middleware.cors import CORSMiddleware
 import requests
-import subprocess
 import os
 
 app = FastAPI()
@@ -31,21 +30,25 @@ async def process_audio(
     with open(file_path, "wb") as f:
         f.write(await audio.read())
 
-    # executa whisper.cpp via CLI
-    result = subprocess.run(
-        [
-            "docker", "exec", "whisper-service",
-            "./main", "-m", "models/ggml-base.en.bin", "-f", f"/data/{audio.filename}", "-otxt"
-        ],
-        capture_output=True, text=True
-    )
-
-    transcript_file = f"{file_path}.txt"
-    if not os.path.exists(transcript_file):
-        return {"error": "Erro ao transcrever áudio."}
-
-    with open(transcript_file, "r") as f:
-        transcript = f.read()
+    # chama a API do faster-whisper
+    whisper_url = "http://faster-whisper:10300/api/transcribe"
+    
+    try:
+        with open(file_path, "rb") as audio_file:
+            files = {"audio_file": (audio.filename, audio_file, audio.content_type)}
+            data = {"language": "pt"}
+            
+            whisper_response = requests.post(whisper_url, files=files, data=data, timeout=120)
+            whisper_response.raise_for_status()
+            
+            transcript_data = whisper_response.json()
+            transcript = transcript_data.get("text", "")
+            
+            if not transcript:
+                return {"error": "Transcrição vazia retornada pelo Whisper."}
+    
+    except Exception as e:
+        return {"error": f"Erro ao transcrever áudio: {str(e)}"}
 
     # gera o relatório com ChatGPT / DeepSeek
     prompt = f"""
