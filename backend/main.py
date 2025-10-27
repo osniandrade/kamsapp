@@ -33,14 +33,19 @@ async def process_audio(
     except Exception as e:
         return {"error": f"Erro ao salvar arquivo: {str(e)}"}
 
-    # chama a API do faster-whisper
-    whisper_url = "http://faster-whisper:10300/api/transcribe"
+    # chama a API do faster-whisper (openai-whisper-asr-webservice)
+    whisper_url = "http://faster-whisper:9000/asr"
     
     try:
         print(f"Processando arquivo: {audio.filename}, tamanho: {os.path.getsize(file_path)} bytes")
+        
         with open(file_path, "rb") as audio_file:
-            files = {"audio_file": (audio.filename, audio_file, audio.content_type or "audio/mpeg")}
-            data = {"language": "pt"}
+            files = {"audio_file": audio_file}
+            data = {
+                "task": "transcribe",
+                "language": "pt",
+                "output": "json"
+            }
             
             print(f"Enviando para {whisper_url}...")
             whisper_response = requests.post(whisper_url, files=files, data=data, timeout=300)
@@ -53,7 +58,7 @@ async def process_audio(
             
             if not transcript:
                 return {"error": "Transcrição vazia retornada pelo Whisper."}
-    
+                
     except requests.exceptions.ConnectionError:
         return {"error": "Não foi possível conectar ao serviço de transcrição. Verifique se o faster-whisper está rodando."}
     except requests.exceptions.Timeout:
