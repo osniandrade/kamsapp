@@ -32,6 +32,9 @@ sendBtn.addEventListener("click", async () => {
   
   resultsDiv.innerHTML = "<p>Processando arquivos...</p>";
   
+  const allTranscripts = [];
+  
+  // Processa cada arquivo e coleta transcrições
   for (let i = 0; i < selectedFiles.length; i++) {
     const file = selectedFiles[i];
     const formData = new FormData();
@@ -42,7 +45,7 @@ sendBtn.addEventListener("click", async () => {
     fileResultDiv.style.marginBottom = "30px";
     fileResultDiv.style.borderBottom = "2px solid #ccc";
     fileResultDiv.style.paddingBottom = "20px";
-    fileResultDiv.innerHTML = `<h4>📁 ${file.name}</h4><p>Processando...</p>`;
+    fileResultDiv.innerHTML = `<h4>📁 ${file.name}</h4><p>Transcrevendo...</p>`;
     resultsDiv.appendChild(fileResultDiv);
 
     try {
@@ -57,16 +60,19 @@ sendBtn.addEventListener("click", async () => {
         fileResultDiv.innerHTML = `
           <h4>📁 ${file.name}</h4>
           <p style="color: red;">❌ Erro: ${data.error}</p>
-          ${data.transcript ? `<h5>Transcrição parcial:</h5><pre>${data.transcript}</pre>` : ''}
         `;
       } else {
         fileResultDiv.innerHTML = `
           <h4>📁 ${file.name}</h4>
           <h5>✅ Transcrição:</h5>
           <pre>${data.transcript || "Sem transcrição"}</pre>
-          <h5>📄 Relatório Gerado:</h5>
-          <pre>${data.report || "Sem relatório"}</pre>
         `;
+        
+        // Adiciona à lista de transcrições
+        allTranscripts.push({
+          filename: data.filename,
+          transcript: data.transcript
+        });
       }
     } catch (error) {
       fileResultDiv.innerHTML = `
@@ -79,5 +85,49 @@ sendBtn.addEventListener("click", async () => {
   // Clear first "Processing" message
   if (resultsDiv.firstChild && resultsDiv.firstChild.tagName === "P") {
     resultsDiv.removeChild(resultsDiv.firstChild);
+  }
+  
+  // Se temos transcrições, gera o relatório consolidado
+  if (allTranscripts.length > 0) {
+    const reportDiv = document.createElement("div");
+    reportDiv.style.marginTop = "40px";
+    reportDiv.style.padding = "20px";
+    reportDiv.style.backgroundColor = "#f0f8ff";
+    reportDiv.style.border = "3px solid #4CAF50";
+    reportDiv.style.borderRadius = "10px";
+    reportDiv.innerHTML = `<h3>📝 Gerando relatório consolidado com ${allTranscripts.length} arquivo(s)...</h3>`;
+    resultsDiv.appendChild(reportDiv);
+    
+    try {
+      const formData = new FormData();
+      formData.append("transcripts", JSON.stringify(allTranscripts));
+      formData.append("report_template", template);
+      
+      const res = await fetch("http://192.168.0.30:8000/generate_report", {
+        method: "POST",
+        body: formData,
+      });
+      
+      const data = await res.json();
+      
+      if (data.error) {
+        reportDiv.innerHTML = `
+          <h3>❌ Erro ao gerar relatório</h3>
+          <p style="color: red;">${data.error}</p>
+        `;
+      } else {
+        reportDiv.innerHTML = `
+          <h3>✅ Relatório Consolidado</h3>
+          <div style="background: white; padding: 15px; border-radius: 5px;">
+            <pre style="white-space: pre-wrap;">${data.report}</pre>
+          </div>
+        `;
+      }
+    } catch (error) {
+      reportDiv.innerHTML = `
+        <h3>❌ Erro ao gerar relatório</h3>
+        <p style="color: red;">${error.message}</p>
+      `;
+    }
   }
 });

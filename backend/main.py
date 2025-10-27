@@ -80,14 +80,47 @@ async def process_audio(
         except:
             pass
 
-    # gera o relatório com ChatGPT / DeepSeek
-    prompt = f"""
-    Texto original: {transcript}
+    # Retorna apenas a transcrição, SEM gerar relatório individual
+    return {"transcript": transcript, "filename": audio.filename}
 
-    Formato desejado do relatório:
+
+@app.post("/generate_report")
+async def generate_report(
+    transcripts: str = Form(...),
+    report_template: str = Form(...)
+):
+    """
+    Gera um único relatório combinando todas as transcrições
+    """
+    import json
+    
+    # Parse do JSON com as transcrições
+    try:
+        transcripts_list = json.loads(transcripts)
+    except json.JSONDecodeError as e:
+        return {"error": f"Erro ao processar transcrições: {str(e)}"}
+    
+    # Combina todas as transcrições
+    combined_transcript = "\n\n".join([
+        f"### Arquivo: {t['filename']}\n{t['transcript']}" 
+        for t in transcripts_list
+    ])
+    
+    # gera o relatório com todas as transcrições combinadas
+    prompt = f"""
+    Você recebeu transcrições de múltiplos áudios sobre atividades de trabalho.
+    
+    TRANSCRIÇÕES:
+    {combined_transcript}
+
+    FORMATO DESEJADO DO RELATÓRIO:
     {report_template}
 
-    Gere um relatório seguindo exatamente o formato acima.
+    Gere um relatório consolidado seguindo exatamente o formato acima, 
+    organizando todas as informações das transcrições de forma estruturada.
+    Remova do relatório final qualquer informação que não esteja nas transcrições.
+    Use markdown para formatação.
+    Responda em português brasileiro.
     """
 
     headers = {
@@ -103,12 +136,15 @@ async def process_audio(
     }
 
     try:
+        print(f"Gerando relatório consolidado com {len(transcripts_list)} transcrições...")
         response = requests.post(OPENROUTER_URL, headers=headers, json=payload, timeout=90)
+        print(f"Status OpenRouter: {response.status_code}")
         response.raise_for_status()
         data = response.json()
 
         report = data["choices"][0]["message"]["content"]
-        return {"transcript": transcript, "report": report}
+        return {"report": report}
 
     except Exception as e:
-        return {"error": str(e), "transcript": transcript}
+        print(f"Erro ao gerar relatório: {str(e)}")
+        return {"error": str(e)}
