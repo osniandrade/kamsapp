@@ -50,11 +50,18 @@ async def process_audio(
             print(f"Enviando para {whisper_url}...")
             whisper_response = requests.post(whisper_url, files=files, data=data, timeout=300)
             print(f"Status code: {whisper_response.status_code}")
+            print(f"Response content: {whisper_response.text[:500]}")
             whisper_response.raise_for_status()
             
-            transcript_data = whisper_response.json()
-            print(f"Resposta recebida: {transcript_data}")
-            transcript = transcript_data.get("text", "")
+            # Try to parse JSON response
+            try:
+                transcript_data = whisper_response.json()
+                print(f"Resposta JSON recebida: {transcript_data}")
+                transcript = transcript_data.get("text", "")
+            except ValueError as json_err:
+                # If not JSON, the response text might BE the transcript
+                print(f"Não é JSON, usando texto direto: {whisper_response.text[:200]}")
+                transcript = whisper_response.text.strip()
             
             if not transcript:
                 return {"error": "Transcrição vazia retornada pelo Whisper."}
