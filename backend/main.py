@@ -27,15 +27,18 @@ async def process_audio(
     file_path = os.path.join(UPLOAD_DIR, audio.filename)
 
     # salva o arquivo de áudio
-    with open(file_path, "wb") as f:
-        f.write(await audio.read())
+    try:
+        with open(file_path, "wb") as f:
+            f.write(await audio.read())
+    except Exception as e:
+        return {"error": f"Erro ao salvar arquivo: {str(e)}"}
 
     # chama a API do faster-whisper
     whisper_url = "http://faster-whisper:10300/api/transcribe"
     
     try:
         with open(file_path, "rb") as audio_file:
-            files = {"audio_file": (audio.filename, audio_file, audio.content_type)}
+            files = {"audio_file": (audio.filename, audio_file, audio.content_type or "audio/mpeg")}
             data = {"language": "pt"}
             
             whisper_response = requests.post(whisper_url, files=files, data=data, timeout=120)
@@ -47,8 +50,19 @@ async def process_audio(
             if not transcript:
                 return {"error": "Transcrição vazia retornada pelo Whisper."}
     
+    except requests.exceptions.ConnectionError:
+        return {"error": "Não foi possível conectar ao serviço de transcrição. Verifique se o faster-whisper está rodando."}
+    except requests.exceptions.Timeout:
+        return {"error": "Timeout ao transcrever áudio. O arquivo pode ser muito longo."}
     except Exception as e:
         return {"error": f"Erro ao transcrever áudio: {str(e)}"}
+    finally:
+        # Remove o arquivo após processar
+        try:
+            if os.path.exists(file_path):
+                os.remove(file_path)
+        except:
+            pass
 
     # gera o relatório com ChatGPT / DeepSeek
     prompt = f"""

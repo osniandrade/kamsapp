@@ -13,18 +13,15 @@
 <body>
   <h1>🎙️ Transcriber Web</h1>
 
-  <div id="dropzone">Arraste seu arquivo de áudio aqui</div>
-  <input type="file" id="fileInput" accept="audio/*" style="display:none" />
+  <div id="dropzone">Arraste seus arquivos de áudio aqui (múltiplos arquivos aceitos)</div>
+  <input type="file" id="fileInput" accept="audio/*,audio/mp3,.mp3" multiple style="display:none" />
 
   <h3>Modelo de relatório:</h3>
   <textarea id="template" placeholder="Exemplo: Relatório diário de incidentes com campos de hora, responsável e ação tomada."></textarea>
   <button id="sendBtn">Enviar e Gerar Relatório</button>
 
-  <h3>Transcrição:</h3>
-  <pre id="transcript"></pre>
-
-  <h3>Relatório Gerado:</h3>
-  <pre id="report"></pre>
+  <h3>Resultados:</h3>
+  <div id="results"></div>
 
   <script src="script.js"></script>
 </body>
