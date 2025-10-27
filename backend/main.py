@@ -37,14 +37,18 @@ async def process_audio(
     whisper_url = "http://faster-whisper:10300/api/transcribe"
     
     try:
+        print(f"Processando arquivo: {audio.filename}, tamanho: {os.path.getsize(file_path)} bytes")
         with open(file_path, "rb") as audio_file:
             files = {"audio_file": (audio.filename, audio_file, audio.content_type or "audio/mpeg")}
             data = {"language": "pt"}
             
-            whisper_response = requests.post(whisper_url, files=files, data=data, timeout=120)
+            print(f"Enviando para {whisper_url}...")
+            whisper_response = requests.post(whisper_url, files=files, data=data, timeout=300)
+            print(f"Status code: {whisper_response.status_code}")
             whisper_response.raise_for_status()
             
             transcript_data = whisper_response.json()
+            print(f"Resposta recebida: {transcript_data}")
             transcript = transcript_data.get("text", "")
             
             if not transcript:
