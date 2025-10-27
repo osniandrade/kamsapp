@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Transcriber Web</title>
+  <style>
+    body { font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; }
+    textarea { width: 100%; height: 120px; margin-top: 10px; }
+    #dropzone { border: 2px dashed #666; padding: 40px; text-align: center; cursor: pointer; }
+    pre { background: #f2f2f2; padding: 10px; border-radius: 6px; }
+  </style>
+</head>
+<body>
+  <h1>🎙️ Transcriber Web</h1>
+
+  <div id="dropzone">Arraste seu arquivo de áudio aqui</div>
+  <input type="file" id="fileInput" accept="audio/*" style="display:none" />
+
+  <h3>Modelo de relatório:</h3>
+  <textarea id="template" placeholder="Exemplo: Relatório diário de incidentes com campos de hora, responsável e ação tomada."></textarea>
+  <button id="sendBtn">Enviar e Gerar Relatório</button>
+
+  <h3>Transcrição:</h3>
+  <pre id="transcript"></pre>
+
+  <h3>Relatório Gerado:</h3>
+  <pre id="report"></pre>
+
+  <script src="script.js"></script>
+</body>
+</html>

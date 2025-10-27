@@ -1,0 +1,42 @@
+version: "3.9"
+services:
+  backend:
+    build: ./backend
+    container_name: transcriber-backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./backend/.env
+    volumes:
+      - ./uploads:/app/uploads
+    depends_on:
+      - faster-whisper
+    restart: always
+
+  faster-whisper:
+    image: lscr.io/linuxserver/faster-whisper:latest
+    container_name: faster-whisper
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+      - WHISPER_MODEL=tiny-int8
+      - LOCAL_ONLY=false #optional
+      - WHISPER_BEAM=1 #optional
+      - WHISPER_LANG=pt #optional
+    volumes:
+      - ./data:/config
+      - ./audio:/audio
+      - ./output:/output
+    ports:
+      - 10300:10300
+    restart: unless-stopped
+ 
+
+  frontend:
+    image: nginx:alpine
+    container_name: transcriber-frontend
+    ports:
+      - "8080:80"
+    volumes:
+      - ./frontend:/usr/share/nginx/html:ro
