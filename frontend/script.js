@@ -21,7 +21,7 @@ sendBtn.addEventListener("click", async () => {
   formData.append("audio", selectedFile);
   formData.append("report_template", template);
 
-  const res = await fetch("http://localhost:8000/process_audio", {
+  const res = await fetch("http://192.168.0.30:8000/process_audio", {
     method: "POST",
     body: formData,
   });
